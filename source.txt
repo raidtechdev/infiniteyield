@@ -7045,11 +7045,11 @@ function sFLY(vfly)
 				local targetVel
 				if moving then
 					targetVel = ((camera.CFrame.LookVector * (CONTROL.F + CONTROL.B)) + ((camera.CFrame * CFrame.new(CONTROL.L + CONTROL.R, (CONTROL.F + CONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0)).Position - camera.CFrame.Position))
-					targetVel = targetVel.Unit * SPEED
+					if targetVel.Magnitude > 0 then targetVel = targetVel.Unit * SPEED else targetVel = Vector3.new(0,0,0) end
 					lCONTROL = {F = CONTROL.F, B = CONTROL.B, L = CONTROL.L, R = CONTROL.R}
 				elseif SPEED ~= 0 then
 					targetVel = ((camera.CFrame.LookVector * (lCONTROL.F + lCONTROL.B)) + ((camera.CFrame * CFrame.new(lCONTROL.L + lCONTROL.R, (lCONTROL.F + lCONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0)).Position - camera.CFrame.Position))
-					targetVel = targetVel.Unit * SPEED
+					if targetVel.Magnitude > 0 then targetVel = targetVel.Unit * SPEED else targetVel = Vector3.new(0,0,0) end
 				else
 					targetVel = Vector3.new(0, 0, 0)
 				end
@@ -11876,11 +11876,9 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 
 	-- velocity spike threshold: 100x default walk (16 studs/s) = 1600
 	local FLING_THRESHOLD = 1600
-	local wasNoclipped = noclipping
+	local wasNoclipped = (Clip == false)
 
-	if loopKillConn then loopKillConn:Disconnect() end
-
-	-- velocity monitor — when TARGET velocity spikes, fling connected, return to saved pos
+	-- velocity monitor — when TARGET velocity spikes, return to saved pos
 	local velConn
 	velConn = RunService.Heartbeat:Connect(function()
 		if not loopKillActive then velConn:Disconnect() return end
@@ -11888,10 +11886,9 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 		if not myRoot then return end
 		for _, target in ipairs(targets) do
 			local tRoot = target.Character and getRoot(target.Character)
-			if tRoot and tRoot.Velocity.Magnitude > FLING_THRESHOLD then
-				-- they're flying, get out
+			if tRoot and tRoot.AssemblyLinearVelocity.Magnitude > FLING_THRESHOLD then
 				myRoot.CFrame = savedPos
-				myRoot.Velocity = Vector3.new(0, 0, 0)
+				myRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 				break
 			end
 		end
@@ -11924,7 +11921,7 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 				end
 
 				-- enable noclip so we can reach them regardless
-				if not noclipping then execCmd('noclip nonotify') end
+				if Clip ~= false then execCmd('noclip nonotify') end
 
 				-- tp to target offset slightly above
 				local tpCF = tRoot.CFrame * CFrame.new(0, 0, -2)
@@ -11955,7 +11952,7 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 					if v:IsA('BasePart') then
 						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
 						v.Massless = false
-						v.Velocity = Vector3.zero
+						v.AssemblyLinearVelocity = Vector3.zero
 					end
 				end
 
@@ -11964,7 +11961,7 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 				end
 
 				-- restore noclip state
-				if not wasNoclipped then execCmd('clip nonotify') end
+				if not wasNoclipped and (Clip == false) then execCmd('clip nonotify') end
 
 				task.wait(0.5)
 			end
@@ -11972,7 +11969,7 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 
 		-- cleanup
 		velConn:Disconnect()
-		if not wasNoclipped and noclipping then execCmd('clip nonotify') end
+		if not wasNoclipped and (Clip == false) then execCmd('clip nonotify') end
 		notify('Loop Kill', 'Stopped')
 	end)
 end)
