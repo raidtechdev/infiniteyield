@@ -6993,7 +6993,7 @@ end)
 
 FLYING = false
 QEfly = true
-iyflyspeed = 1
+iyflyspeed = 50
 vehicleflyspeed = 1
 function sFLY(vfly)
 	local plr = Players.LocalPlayer
@@ -7039,15 +7039,16 @@ function sFLY(vfly)
 				SPEED = SPEED + (targetSpeed - SPEED) * 0.2
 
 				local targetVel
+				local vertVel = Vector3.new(0, CONTROL.Q + CONTROL.E, 0)
 				if moving then
-					targetVel = ((camera.CFrame.LookVector * (CONTROL.F + CONTROL.B)) + ((camera.CFrame * CFrame.new(CONTROL.L + CONTROL.R, (CONTROL.F + CONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0)).Position - camera.CFrame.Position))
-					if targetVel.Magnitude > 0 then targetVel = targetVel.Unit * SPEED else targetVel = Vector3.new(0,0,0) end
+					local hDir = (camera.CFrame.LookVector * (CONTROL.F + CONTROL.B)) + ((camera.CFrame * CFrame.new(CONTROL.L + CONTROL.R, 0, 0)).Position - camera.CFrame.Position)
+					targetVel = (hDir.Magnitude > 0 and hDir.Unit * SPEED or Vector3.new(0,0,0)) + vertVel
 					lCONTROL = {F = CONTROL.F, B = CONTROL.B, L = CONTROL.L, R = CONTROL.R}
 				elseif SPEED ~= 0 then
-					targetVel = ((camera.CFrame.LookVector * (lCONTROL.F + lCONTROL.B)) + ((camera.CFrame * CFrame.new(lCONTROL.L + lCONTROL.R, (lCONTROL.F + lCONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0)).Position - camera.CFrame.Position))
-					if targetVel.Magnitude > 0 then targetVel = targetVel.Unit * SPEED else targetVel = Vector3.new(0,0,0) end
+					local hDir = (camera.CFrame.LookVector * (lCONTROL.F + lCONTROL.B)) + ((camera.CFrame * CFrame.new(lCONTROL.L + lCONTROL.R, 0, 0)).Position - camera.CFrame.Position)
+					targetVel = (hDir.Magnitude > 0 and hDir.Unit * SPEED or Vector3.new(0,0,0)) + vertVel
 				else
-					targetVel = Vector3.new(0, 0, 0)
+					targetVel = vertVel
 				end
 				currentVel = currentVel:Lerp(targetVel, 0.25)
 				BV.Velocity = currentVel
@@ -10338,7 +10339,7 @@ addcmd('speed',{'ws','walkspeed'},function(args, speaker)
 		return
 	end
 
-	hum.WalkSpeed = 16
+	hum.WalkSpeed = 0
 	speedBoostActive = true
 
 	local bv = Instance.new("BodyVelocity")
@@ -10422,7 +10423,7 @@ local function startLoopSpeed(speaker, speed)
 		return
 	end
 
-	hum.WalkSpeed = 16
+	hum.WalkSpeed = 0
 
 	local bv = Instance.new("BodyVelocity")
 	bv.Name = "IY_LoopBV"
