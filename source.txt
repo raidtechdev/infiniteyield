@@ -11318,11 +11318,11 @@ addcmd('clearhats',{'cleanhats'},function(args, speaker)
 		end
 
 		for i = 1, #Hats do
-			repeat RunService.Heartbeat:task.wait() until Hats[i]
+			repeat RunService.Heartbeat:Wait() until Hats[i]
 			firetouchinterest(Hats[i].Handle,getRoot(Character),0)
-			repeat RunService.Heartbeat:task.wait() until Character:FindFirstChildOfClass("Accessory")
+			repeat RunService.Heartbeat:Wait() until Character:FindFirstChildOfClass("Accessory")
 			Character:FindFirstChildOfClass("Accessory"):Destroy()
-			repeat RunService.Heartbeat:task.wait() until not Character:FindFirstChildOfClass("Accessory")
+			repeat RunService.Heartbeat:Wait() until not Character:FindFirstChildOfClass("Accessory")
 		end
 
 		execCmd("reset")
