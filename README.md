@@ -1,24 +1,41 @@
-# Infinite Yield
+# INFY 2.0
 
-The best command line script for roblox.
+A heavily modified fork of Infinite Yield FE — reworked movement, fixed godmode, cleaner anticheat evasion, and more.
 
-[![](https://dcbadge.limes.pink/api/server/https://discord.gg/78ZuWSq)](https://discord.gg/78ZuWSq)
+## Changes from base IY
 
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-```
+- **Godmode** — complete rewrite using death detection + instant rejoin + position restore. the original clone trick was broken on most games.
+- **Speed / Loopspeed** — replaced direct `WalkSpeed` manipulation with `BodyVelocity` heartbeat approach. `WalkSpeed` stays at 16 visually, actual movement velocity is pushed separately to avoid common AC flags.
+- **Fly / VFly** — smoothed velocity with lerp, normalized direction vectors, force values tuned down from suspicious `9e9` to realistic levels. movement ramps in/out naturally.
+- **Clickteleport** — removed. was buggy and unreliable.
+- **Ungod / Unspeed** — proper cleanup commands added for all new movement systems.
 
- - Currently 400 commands
- - Open Source
- - 8+ years of development
+## Credits
 
-## Developers
+Original Infinite Yield developers:
+- **Moon**
+- **Zwolf**
+- **Sleaze**
+- **Toon**
+- **Peyton** (apeyton)
+- **ATP**
+- **Edge**
 
-### Creator: [Edge](https://github.com/EdgeIY)
-### Developers: [Moon](https://github.com/LorekeeperZinnia), [Zwolf](https://github.com/luatsuki), [Sleaze](https://github.com/sleaze5), [Toon](https://github.com/Toon-arch), [Peyton](https://github.com/peyton2465), [ATP](https://github.com/ionizedparticle)
+Fork maintained by **[raidtechdev](https://github.com/raidtechdev)**
 
 ## Usage
-You can learn how to use all the features of this script in [the wiki](https://github.com/EdgeIY/infiniteyield/wiki)!
 
-## Contributing
-There is no specific rules on contributing (as of now) just open a [pull request](https://github.com/EdgeIY/infiniteyield/pulls) and if it checks out we will merge it!
+Load via your executor. All original IY commands work. New/changed commands:
+
+| Command | Description |
+|---|---|
+| `god` | Detects death, saves position, rejoins and teleports back |
+| `ungod` | Stops godmode tracking |
+| `speed [n]` | Sets speed. Above 24 uses BodyVelocity instead of WalkSpeed |
+| `unspeed` | Resets speed and cleans up |
+| `loopspeed [n]` | Persistent speed that survives respawns |
+| `unloopspeed` | Stops loopspeed |
+
+## License
+
+Based on Infinite Yield FE. All original credit belongs to the original developers listed above.
