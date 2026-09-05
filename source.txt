@@ -11863,26 +11863,25 @@ loopKillActive = false
 loopKillConn = nil
 
 addcmd('loopkill', {'lkill'}, function(args, speaker)
-	local targets = getPlayers(args[1], speaker)
-	if not targets or #targets == 0 then return notify('Loop Kill', 'No target found') end
+	local targetNames = getPlayer(args[1], speaker)
+	if not targetNames or #targetNames == 0 then return notify('Loop Kill', 'No target found') end
 
 	loopKillActive = true
 	local myChar = speaker.Character
 	if not myChar then return end
 	local savedPos = getRoot(myChar) and getRoot(myChar).CFrame
 
-	-- velocity spike threshold: 100x default walk (16 studs/s) = 1600
 	local FLING_THRESHOLD = 1600
 	local wasNoclipped = (Clip == false)
 
-	-- velocity monitor — when TARGET velocity spikes, return to saved pos
 	local velConn
 	velConn = RunService.Heartbeat:Connect(function()
 		if not loopKillActive then velConn:Disconnect() return end
 		local myRoot = myChar and getRoot(myChar)
 		if not myRoot then return end
-		for _, target in ipairs(targets) do
-			local tRoot = target.Character and getRoot(target.Character)
+		for _, name in ipairs(targetNames) do
+			local plr = Players[name]
+			local tRoot = plr and plr.Character and getRoot(plr.Character)
 			if tRoot and tRoot.AssemblyLinearVelocity.Magnitude > FLING_THRESHOLD then
 				myRoot.CFrame = savedPos
 				myRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
@@ -11897,9 +11896,10 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 			if not myChar or not getRoot(myChar) then task.wait(1) continue end
 			savedPos = getRoot(myChar).CFrame
 
-			for _, target in ipairs(targets) do
+			for _, name in ipairs(targetNames) do
 				if not loopKillActive then break end
-				local tChar = target.Character
+				local plr = Players[name]
+				local tChar = plr and plr.Character
 				local tRoot = tChar and getRoot(tChar)
 				local tHum = tChar and tChar:FindFirstChildOfClass('Humanoid')
 
@@ -11908,25 +11908,18 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 					continue
 				end
 
-				-- detect if target is noclipped (no collision on their parts)
-				local targetNoclipped = false
-				for _, part in ipairs(tChar:GetDescendants()) do
-					if part:IsA('BasePart') and not part.CanCollide then
-						targetNoclipped = true
-						break
+				if Clip ~= false then execCmd('noclip nonotify') end
+
+				getRoot(myChar).CFrame = tRoot.CFrame * CFrame.new(0, 0, -2)
+				task.wait(0.05)
+
+				for _, v in ipairs(myChar:GetDescendants()) do
+					if v:IsA('BasePart') then
+						v.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+						v.Massless = true
 					end
 				end
 
-				-- enable noclip so we can reach them regardless
-				if Clip ~= false then execCmd('noclip nonotify') end
-
-				-- tp to target offset slightly above
-				local tpCF = tRoot.CFrame * CFrame.new(0, 0, -2)
-				getRoot(myChar).CFrame = tpCF
-
-				task.wait(0.05)
-
-				-- fling
 				local bambam = Instance.new('BodyAngularVelocity')
 				bambam.Name = randomString()
 				bambam.AngularVelocity = Vector3.new(0, 99999, 0)
@@ -11934,37 +11927,27 @@ addcmd('loopkill', {'lkill'}, function(args, speaker)
 				bambam.P = math.huge
 				bambam.Parent = getRoot(myChar)
 
-				for _, v in ipairs(myChar:GetChildren()) do
-					if v:IsA('BasePart') then
-						v.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
-						v.Massless = true
-					end
-				end
+				repeat
+					bambam.AngularVelocity = Vector3.new(0, 99999, 0)
+					task.wait(0.2)
+					bambam.AngularVelocity = Vector3.new(0, 0, 0)
+					task.wait(0.1)
+				until not loopKillActive or (tHum.Health <= 0)
 
-				task.wait(0.3)
-
-				-- clean up fling and return to saved pos
 				bambam:Destroy()
-				for _, v in ipairs(myChar:GetChildren()) do
+				for _, v in ipairs(myChar:GetDescendants()) do
 					if v:IsA('BasePart') then
 						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
 						v.Massless = false
-						v.AssemblyLinearVelocity = Vector3.zero
 					end
 				end
 
-				if getRoot(myChar) then
-					getRoot(myChar).CFrame = savedPos
-				end
-
-				-- restore noclip state
+				if getRoot(myChar) then getRoot(myChar).CFrame = savedPos end
 				if not wasNoclipped and (Clip == false) then execCmd('clip nonotify') end
-
 				task.wait(0.5)
 			end
 		end
 
-		-- cleanup
 		velConn:Disconnect()
 		if not wasNoclipped and (Clip == false) then execCmd('clip nonotify') end
 		notify('Loop Kill', 'Stopped')
