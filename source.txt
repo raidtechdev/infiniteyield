@@ -13232,6 +13232,66 @@ addcmd("debug", {}, function(args, speaker)
     notify("debug", tostring(opt), 1)
 end)
 
+local clickTpConnection = nil
+
+addcmd('clicktp',{'ctp'},function(args, speaker)
+	execCmd('unclicktp')
+	task.wait()
+	local offset = 3
+	if args[1] and isNumber(args[1]) then offset = tonumber(args[1]) end
+	clickTpConnection = IYMouse.Button1Down:Connect(function()
+		local character = speaker.Character
+		local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+		if not humanoid then return end
+		local Root = getRoot(character)
+		if not Root then return end
+		local target = IYMouse.Hit
+		if not target then return end
+
+		if humanoid.SeatPart then
+			humanoid.Sit = false
+			task.wait(0.1)
+		end
+
+		character:PivotTo(CFrame.new(target.Position + Vector3.new(0, offset, 0)))
+		breakVelocity()
+	end)
+	notify('Click Teleport','Click anywhere to teleport there. Run unclicktp to stop')
+end)
+
+addcmd('unclicktp',{'noclicktp'},function(args, speaker)
+	if clickTpConnection then
+		clickTpConnection:Disconnect()
+		clickTpConnection = nil
+	end
+end)
+
+addcmd('tpcoords',{'tpc','tpcoord'},function(args, speaker)
+	if not (args[1] and args[2] and args[3] and isNumber(args[1]) and isNumber(args[2]) and isNumber(args[3])) then
+		notify('Teleport Coords','Usage: tpcoords [x] [y] [z]')
+		return
+	end
+	local character = speaker.Character
+	local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+	if not humanoid then return end
+	if humanoid.SeatPart then
+		humanoid.Sit = false
+		task.wait(0.1)
+	end
+	character:PivotTo(CFrame.new(tonumber(args[1]), tonumber(args[2]), tonumber(args[3])))
+	breakVelocity()
+end)
+
+addcmd('copycoord',{'copycoords','copycord','ccoord'},function(args, speaker)
+	local Root = getRoot(speaker.Character)
+	if not Root then
+		notify('Copy Coords','Could not find your position')
+		return
+	end
+	local pos = Root.Position
+	toClipboard(string.format("%.1f %.1f %.1f", pos.X, pos.Y, pos.Z))
+end)
+
 if IsOnMobile then
 	local QuickCapture = Instance.new("TextButton")
 	local UICorner = Instance.new("UICorner")
