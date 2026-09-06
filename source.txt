@@ -9493,7 +9493,6 @@ end)
 oofing = false
 addcmd('loopoof',{},function(args, speaker)
 	oofing = true
-	repeat wait(0.1)
 	repeat task.wait(0.1)
 		for i,v in pairs(Players:GetPlayers()) do
 			if v.Character ~= nil and v.Character:FindFirstChild'Head' then
@@ -10824,7 +10823,6 @@ spamspeed = 1
 addcmd('spam',{},function(args, speaker)
 	spamming = true
 	local spamstring = getstring(1, args)
-	repeat wait(spamspeed)
 	repeat task.wait(spamspeed)
 		chatMessage(spamstring)
 	until spamming == false
@@ -11167,9 +11165,6 @@ addcmd('gotomodel',{'tomodel'},function(args, speaker)
 				speaker.Character:FindFirstChildOfClass('Humanoid').Sit = false
 				wait(.1)
 			end
-			wait(gotopartDelay)
-				task.wait(.1)
-			end
 			task.wait(gotopartDelay)
 			getRoot(speaker.Character).CFrame = v:GetModelCFrame()
 		end
@@ -11182,9 +11177,6 @@ addcmd('tweengotomodel',{'tgotomodel','ttomodel'},function(args, speaker)
 			if speaker.Character:FindFirstChildOfClass('Humanoid') and speaker.Character:FindFirstChildOfClass('Humanoid').SeatPart then
 				speaker.Character:FindFirstChildOfClass('Humanoid').Sit = false
 				wait(.1)
-			end
-			wait(gotopartDelay)
-				task.wait(.1)
 			end
 			task.wait(gotopartDelay)
 			TweenService:Create(getRoot(speaker.Character), TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = v:GetModelCFrame()}):Play()
