@@ -2167,10 +2167,6 @@ function writefileCooldown(name,data)
 			writefileCooldown(name,data)
 		end
 		wait(3)
-			repeat task.wait() until cooldown == false
-			writefileCooldown(name,data)
-		end
-		task.wait(3)
 		cooldown = false
 	end)
 end
@@ -5058,11 +5054,6 @@ Players.LocalPlayer.CharacterAdded:Connect(function()
 		execCmd('clip')
 	end
 
-	repeat wait() until getRoot(Players.LocalPlayer.Character)
-
-	pcall(function()
-		if spawnpoint and not refreshCmd and spawnpos ~= nil then
-			wait(spDelay)
 	repeat task.wait() until getRoot(Players.LocalPlayer.Character)
 
 	pcall(function()
@@ -12484,10 +12475,6 @@ function teleport(speaker,target,target2,fast)
 			local hrp2 = getRoot(target2.Character)
 			attach(speaker,target)
 			repeat
-				wait()
-				hrp.CFrame = hrp2.CFrame
-			until not getRoot(target.Character) or not getRoot(speaker.Character)
-			wait(1)
 				task.wait()
 				hrp.CFrame = hrp2.CFrame
 			until not getRoot(target.Character) or not getRoot(speaker.Character)
@@ -12615,9 +12602,6 @@ addcmd('autoclick',{},function(args, speaker)
 			end
 		end)
 		notify('Auto Clicker',"Press [backspace] and [=] at the same time to stop")
-		repeat wait(clickDelay)
-			mouse1press()
-			wait(releaseDelay)
 		repeat task.wait(clickDelay)
 			mouse1press()
 			task.wait(releaseDelay)
@@ -13011,7 +12995,6 @@ addcmd("trip", {}, function(args, speaker)
 end)
 
 addcmd("removeads", {"adblock"}, function(args, speaker)
-	while wait() do
 	while task.wait() do
 		pcall(function()
 			for i, v in pairs(workspace:GetDescendants()) do
@@ -13408,9 +13391,6 @@ addcmd('autokeypress',{'keypress'},function(args, speaker)
 			end
 		end)
 		notify('Auto Key Press',"Press [backspace] and [=] at the same time to stop")
-		repeat wait(clickDelay)
-			keypress(code)
-			wait(releaseDelay)
 		repeat task.wait(clickDelay)
 			keypress(code)
 			task.wait(releaseDelay)
