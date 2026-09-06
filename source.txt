@@ -13837,6 +13837,516 @@ addcmd('unloopchat', {'noloopchat', 'unloopmsg'}, function(args, speaker)
 	notify('Loop Chat', 'Stopped')
 end)
 
+-- ════════════════════════════════════════
+-- IY COMMAND PANEL — replaces old Holder UI
+-- ════════════════════════════════════════
+
+-- hide the original command bar box
+Holder.Visible = false
+
+local PANEL_W = 420
+local PANEL_H = 520
+local HEADER_H = 32
+local ROW_H = 30
+local panelOpen = false
+local panelMaximized = false
+local panelToggles = {}  -- [cmdName] = true when "enabled"
+
+-- color palette: black + red
+local C_BG      = Color3.fromRGB(15, 15, 15)
+local C_HEADER  = Color3.fromRGB(25, 25, 25)
+local C_ROW1    = Color3.fromRGB(20, 20, 20)
+local C_ROW2    = Color3.fromRGB(26, 26, 26)
+local C_ACCENT  = Color3.fromRGB(200, 30, 30)
+local C_ENABLE  = Color3.fromRGB(180, 28, 28)
+local C_DISABLE = Color3.fromRGB(60, 60, 60)
+local C_RUN     = Color3.fromRGB(50, 50, 50)
+local C_TEXT    = Color3.fromRGB(240, 240, 240)
+local C_DIM     = Color3.fromRGB(150, 150, 150)
+local C_SEARCH  = Color3.fromRGB(30, 30, 30)
+
+-- root frame (off-screen initially)
+local Panel = Instance.new("Frame")
+Panel.Name = randomString()
+Panel.Size = UDim2.new(0, PANEL_W, 0, PANEL_H)
+Panel.Position = UDim2.new(0.5, -PANEL_W/2, -1, 0)
+Panel.BackgroundColor3 = C_BG
+Panel.BorderSizePixel = 0
+Panel.Active = true
+Panel.ZIndex = 20
+Panel.Parent = ScaledHolder
+
+-- subtle border via UIStroke
+local panelStroke = Instance.new("UIStroke")
+panelStroke.Color = C_ACCENT
+panelStroke.Thickness = 1.5
+panelStroke.Parent = Panel
+
+-- corner radius
+local panelCorner = Instance.new("UICorner")
+panelCorner.CornerRadius = UDim.new(0, 6)
+panelCorner.Parent = Panel
+
+-- ── HEADER ──────────────────────────────
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, HEADER_H)
+Header.BackgroundColor3 = C_HEADER
+Header.BorderSizePixel = 0
+Header.ZIndex = 21
+Header.Parent = Panel
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 6)
+headerCorner.Parent = Header
+
+-- bottom of header is square (only top corners rounded)
+local headerFill = Instance.new("Frame")
+headerFill.Size = UDim2.new(1, 0, 0.5, 0)
+headerFill.Position = UDim2.new(0, 0, 0.5, 0)
+headerFill.BackgroundColor3 = C_HEADER
+headerFill.BorderSizePixel = 0
+headerFill.ZIndex = 21
+headerFill.Parent = Header
+
+local accentBar = Instance.new("Frame")
+accentBar.Size = UDim2.new(1, 0, 0, 2)
+accentBar.Position = UDim2.new(0, 0, 1, -2)
+accentBar.BackgroundColor3 = C_ACCENT
+accentBar.BorderSizePixel = 0
+accentBar.ZIndex = 22
+accentBar.Parent = Header
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -110, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Infinite Yield  |  Command Panel"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 13
+TitleLabel.TextColor3 = C_TEXT
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.ZIndex = 22
+TitleLabel.Parent = Header
+
+-- header buttons: minimize (--), maximize (□), close (X)
+local function makeHeaderBtn(symbol, xOffset)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 28, 0, 22)
+	btn.Position = UDim2.new(1, xOffset, 0.5, -11)
+	btn.BackgroundColor3 = C_HEADER
+	btn.BorderSizePixel = 0
+	btn.Text = symbol
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.TextColor3 = C_DIM
+	btn.ZIndex = 23
+	btn.Parent = Header
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 4)
+	c.Parent = btn
+	btn.MouseEnter:Connect(function() btn.TextColor3 = C_TEXT end)
+	btn.MouseLeave:Connect(function() btn.TextColor3 = C_DIM end)
+	return btn
+end
+
+local BtnClose    = makeHeaderBtn("✕", -8)
+local BtnMaximize = makeHeaderBtn("□", -40)
+local BtnMinimize = makeHeaderBtn("—", -72)
+
+BtnClose.TextColor3 = Color3.fromRGB(200, 60, 60)
+BtnClose.MouseEnter:Connect(function() BtnClose.TextColor3 = Color3.fromRGB(255, 80, 80) end)
+BtnClose.MouseLeave:Connect(function() BtnClose.TextColor3 = Color3.fromRGB(200, 60, 60) end)
+
+-- ── SEARCH BAR ───────────────────────────
+local SearchBar = Instance.new("Frame")
+SearchBar.Size = UDim2.new(1, -20, 0, 30)
+SearchBar.Position = UDim2.new(0, 10, 0, HEADER_H + 8)
+SearchBar.BackgroundColor3 = C_SEARCH
+SearchBar.BorderSizePixel = 0
+SearchBar.ZIndex = 21
+SearchBar.Parent = Panel
+
+local sbCorner = Instance.new("UICorner")
+sbCorner.CornerRadius = UDim.new(0, 5)
+sbCorner.Parent = SearchBar
+
+local sbStroke = Instance.new("UIStroke")
+sbStroke.Color = Color3.fromRGB(50, 50, 50)
+sbStroke.Thickness = 1
+sbStroke.Parent = SearchBar
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Size = UDim2.new(1, -10, 1, 0)
+SearchBox.Position = UDim2.new(0, 8, 0, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.PlaceholderText = "Search commands..."
+SearchBox.PlaceholderColor3 = C_DIM
+SearchBox.Text = ""
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.TextSize = 13
+SearchBox.TextColor3 = C_TEXT
+SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+SearchBox.ClearTextOnFocus = false
+SearchBox.ZIndex = 22
+SearchBox.Parent = SearchBar
+
+-- ── SCROLL FRAME ─────────────────────────
+local SCROLL_TOP = HEADER_H + 8 + 30 + 8
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -8, 1, -(SCROLL_TOP + 8))
+Scroll.Position = UDim2.new(0, 4, 0, SCROLL_TOP)
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+Scroll.ScrollBarThickness = 4
+Scroll.ScrollBarImageColor3 = C_ACCENT
+Scroll.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
+Scroll.MidImage   = "rbxasset://textures/ui/Scroll/scroll-middle.png"
+Scroll.TopImage   = "rbxasset://textures/ui/Scroll/scroll-middle.png"
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+Scroll.ZIndex = 21
+Scroll.Parent = Panel
+
+local RowLayout = Instance.new("UIListLayout")
+RowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+RowLayout.Padding = UDim.new(0, 2)
+RowLayout.Parent = Scroll
+
+RowLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	Scroll.CanvasSize = UDim2.new(0, 0, 0, RowLayout.AbsoluteContentSize.Y + 4)
+end)
+
+-- ── DRAG LOGIC ───────────────────────────
+task.spawn(function()
+	local dragging, dragStart, startPos, dragInput
+	Header.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = Panel.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+	Header.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			Panel.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end)
+
+-- ── OPEN / CLOSE ─────────────────────────
+local function openPanel()
+	panelOpen = true
+	Panel:TweenPosition(UDim2.new(0.5, -PANEL_W/2, 0.5, -PANEL_H/2), "Out", "Quart", 0.25, true)
+	task.wait(0.05)
+	SearchBox:CaptureFocus()
+end
+
+local function closePanel()
+	panelOpen = false
+	Panel:TweenPosition(UDim2.new(0.5, -PANEL_W/2, -1, 0), "In", "Quart", 0.2, true)
+end
+
+local function togglePanel()
+	if panelOpen then closePanel() else openPanel() end
+end
+
+-- ── HEADER BUTTON LOGIC ──────────────────
+BtnMinimize.MouseButton1Click:Connect(function()
+	-- collapse to header only
+	if not panelMaximized then
+		Panel:TweenSize(UDim2.new(0, PANEL_W, 0, HEADER_H), "Out", "Quart", 0.2, true)
+	else
+		Panel:TweenSize(UDim2.new(1, -20, 1, -20), "Out", "Quart", 0.2, true)
+		Panel.Position = UDim2.new(0, 10, 0, 10)
+		-- collapse height only
+		Panel:TweenSize(UDim2.new(1, -20, 0, HEADER_H), "Out", "Quart", 0.2, true)
+	end
+	Scroll.Visible = false
+	SearchBar.Visible = false
+end)
+
+BtnMaximize.MouseButton1Click:Connect(function()
+	panelMaximized = not panelMaximized
+	Scroll.Visible = true
+	SearchBar.Visible = true
+	if panelMaximized then
+		Panel:TweenPosition(UDim2.new(0, 10, 0, 10), "Out", "Quart", 0.2, true)
+		Panel:TweenSize(UDim2.new(1, -20, 1, -20), "Out", "Quart", 0.2, true)
+	else
+		Panel:TweenPosition(UDim2.new(0.5, -PANEL_W/2, 0.5, -PANEL_H/2), "Out", "Quart", 0.2, true)
+		Panel:TweenSize(UDim2.new(0, PANEL_W, 0, PANEL_H), "Out", "Quart", 0.2, true)
+	end
+end)
+
+BtnClose.MouseButton1Click:Connect(function()
+	-- disable every active feature before nuking
+	for name, active in pairs(panelToggles) do
+		if active then
+			local dcmd = findDisableCmd(name)
+			if dcmd then
+				pcall(function() execCmd(dcmd, Players.LocalPlayer) end)
+			end
+		end
+	end
+	task.wait(0.15)
+	pcall(function() PARENT:Destroy() end)
+	pcall(function() getgenv().IY_LOADED = false end)
+end)
+
+-- restore panel size if minimized and header clicked again
+Header.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if not Scroll.Visible then
+			Scroll.Visible = true
+			SearchBar.Visible = true
+			if panelMaximized then
+				Panel:TweenSize(UDim2.new(1, -20, 1, -20), "Out", "Quart", 0.2, true)
+			else
+				Panel:TweenSize(UDim2.new(0, PANEL_W, 0, PANEL_H), "Out", "Quart", 0.2, true)
+			end
+		end
+	end
+end)
+
+-- ── REPLACE ; KEYBIND ────────────────────
+-- disconnect the old KeyDown that focused Cmdbar and replace it
+-- (IYMouse.KeyDown is a legacy signal — reconnect with UserInputService too)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.Semicolon then
+		togglePanel()
+	end
+end)
+
+-- ── BUILD COMMAND ROWS ───────────────────
+local function findDisableCmd(name)
+	local candidates = {"un"..name, "no"..name}
+	-- also handle patterns like "unfling" for "fling"
+	for _, c in ipairs(cmds) do
+		local cname = c.NAME:lower()
+		for _, pat in ipairs(candidates) do
+			if cname == pat then return c.NAME end
+		end
+		-- check aliases too
+		for _, alias in ipairs(c.ALIAS) do
+			for _, pat in ipairs(candidates) do
+				if alias:lower() == pat then return c.NAME end
+			end
+		end
+	end
+	return nil
+end
+
+-- commands that expect a numeric argument
+local numericArgCmds = {
+	speed=true, walkspeed=true, ws=true,
+	jump=true, jumppower=true, jp=true,
+	gravity=true, grav=true,
+	fov=true,
+	size=true,
+	reach=true,
+	hipheight=true,
+	maxhealth=true,
+	health=true,
+	time=true,
+	setage=true,
+	chatdelay=true,
+	loopchatdelay=true,
+	respawntime=true,
+	framerate=true,
+	fps=true,
+	delay=true,
+}
+
+local function makeRow(cmd, idx)
+	local disableCmd = findDisableCmd(cmd.NAME)
+	local isToggle = disableCmd ~= nil
+	local isNumeric = numericArgCmds[cmd.NAME:lower()] == true
+
+	local Row = Instance.new("Frame")
+	Row.Name = cmd.NAME
+	Row.Size = UDim2.new(1, -8, 0, ROW_H)
+	Row.BackgroundColor3 = idx % 2 == 0 and C_ROW1 or C_ROW2
+	Row.BorderSizePixel = 0
+	Row.LayoutOrder = idx
+	Row.ZIndex = 22
+	Row.Parent = Scroll
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 4)
+	rowCorner.Parent = Row
+
+	-- label width shrinks if numeric textbox is present
+	local labelRightPad = isNumeric and -150 or -88
+	local NameLabel = Instance.new("TextLabel")
+	NameLabel.Size = UDim2.new(1, labelRightPad, 1, 0)
+	NameLabel.Position = UDim2.new(0, 10, 0, 0)
+	NameLabel.BackgroundTransparency = 1
+	NameLabel.Text = cmd.NAME
+	NameLabel.Font = Enum.Font.Gotham
+	NameLabel.TextSize = 12
+	NameLabel.TextColor3 = C_TEXT
+	NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	NameLabel.ZIndex = 23
+	NameLabel.Parent = Row
+
+	-- numeric input box (only for numeric-arg commands)
+	local NumBox
+	if isNumeric then
+		local nbFrame = Instance.new("Frame")
+		nbFrame.Size = UDim2.new(0, 52, 0, 20)
+		nbFrame.Position = UDim2.new(1, -136, 0.5, -10)
+		nbFrame.BackgroundColor3 = C_SEARCH
+		nbFrame.BorderSizePixel = 0
+		nbFrame.ZIndex = 23
+		nbFrame.Parent = Row
+
+		local nbCorner = Instance.new("UICorner")
+		nbCorner.CornerRadius = UDim.new(0, 4)
+		nbCorner.Parent = nbFrame
+
+		local nbStroke = Instance.new("UIStroke")
+		nbStroke.Color = Color3.fromRGB(70, 70, 70)
+		nbStroke.Thickness = 1
+		nbStroke.Parent = nbFrame
+
+		NumBox = Instance.new("TextBox")
+		NumBox.Size = UDim2.new(1, -6, 1, 0)
+		NumBox.Position = UDim2.new(0, 4, 0, 0)
+		NumBox.BackgroundTransparency = 1
+		NumBox.PlaceholderText = "0"
+		NumBox.PlaceholderColor3 = C_DIM
+		NumBox.Text = ""
+		NumBox.Font = Enum.Font.Gotham
+		NumBox.TextSize = 12
+		NumBox.TextColor3 = C_TEXT
+		NumBox.ClearTextOnFocus = false
+		NumBox.ZIndex = 24
+		NumBox.Parent = nbFrame
+
+		-- highlight border on focus
+		NumBox.Focused:Connect(function() nbStroke.Color = C_ACCENT end)
+		NumBox.FocusLost:Connect(function() nbStroke.Color = Color3.fromRGB(70,70,70) end)
+	end
+
+	local function buildCmdStr(name)
+		if isNumeric and NumBox and NumBox.Text ~= "" then
+			return name .. " " .. NumBox.Text
+		end
+		return name
+	end
+
+	local ActionBtn = Instance.new("TextButton")
+	ActionBtn.Size = UDim2.new(0, 72, 0, 22)
+	ActionBtn.Position = UDim2.new(1, -78, 0.5, -11)
+	ActionBtn.BorderSizePixel = 0
+	ActionBtn.Font = Enum.Font.GothamBold
+	ActionBtn.TextSize = 11
+	ActionBtn.TextColor3 = C_TEXT
+	ActionBtn.ZIndex = 23
+	ActionBtn.Parent = Row
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 4)
+	btnCorner.Parent = ActionBtn
+
+	if isToggle then
+		ActionBtn.Text = "Enable"
+		ActionBtn.BackgroundColor3 = C_ENABLE
+
+		ActionBtn.MouseButton1Click:Connect(function()
+			if not panelToggles[cmd.NAME] then
+				panelToggles[cmd.NAME] = true
+				execCmd(buildCmdStr(cmd.NAME), Players.LocalPlayer)
+				ActionBtn.Text = "Disable"
+				ActionBtn.BackgroundColor3 = C_DISABLE
+				NameLabel.TextColor3 = C_ACCENT
+			else
+				panelToggles[cmd.NAME] = false
+				execCmd(buildCmdStr(disableCmd), Players.LocalPlayer)
+				ActionBtn.Text = "Enable"
+				ActionBtn.BackgroundColor3 = C_ENABLE
+				NameLabel.TextColor3 = C_TEXT
+			end
+		end)
+	else
+		ActionBtn.Text = "Run"
+		ActionBtn.BackgroundColor3 = C_RUN
+
+		ActionBtn.MouseButton1Click:Connect(function()
+			execCmd(buildCmdStr(cmd.NAME), Players.LocalPlayer)
+			ActionBtn.BackgroundColor3 = C_ACCENT
+			task.delay(0.3, function() ActionBtn.BackgroundColor3 = C_RUN end)
+		end)
+	end
+
+	-- hover highlight
+	Row.MouseEnter:Connect(function()
+		Row.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	end)
+	Row.MouseLeave:Connect(function()
+		Row.BackgroundColor3 = idx % 2 == 0 and C_ROW1 or C_ROW2
+	end)
+
+	return Row
+end
+
+-- build all rows after cmds table is fully populated
+local allRows = {}
+local function buildRows()
+	-- filter out un/no cmds and empty entries — those are the disable side, shown via the toggle
+	local skipSet = {}
+	for _, c in ipairs(cmds) do
+		local n = c.NAME:lower()
+		if n:sub(1,2) == "un" or n:sub(1,2) == "no" then
+			skipSet[n] = true
+		end
+	end
+
+	local idx = 0
+	for _, c in ipairs(cmds) do
+		if c.NAME ~= "" and not skipSet[c.NAME:lower()] then
+			idx = idx + 1
+			local row = makeRow(c, idx)
+			allRows[c.NAME] = row
+		end
+	end
+end
+
+-- search filter
+local function filterRows(query)
+	query = query:lower()
+	for name, row in pairs(allRows) do
+		if query == "" or name:lower():sub(1, #query) == query or name:lower():find(query, 1, true) then
+			row.Visible = true
+		else
+			row.Visible = false
+		end
+	end
+end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	filterRows(SearchBox.Text)
+end)
+
+-- build rows now (all addcmd calls above this point are done)
+buildRows()
+
 if loadedEventData then eventEditor.LoadData(loadedEventData) end
 eventEditor.Refresh()
 
