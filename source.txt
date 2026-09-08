@@ -7097,15 +7097,6 @@ function sFLY(vfly)
 				SPEED = SPEED + (targetSpeed - SPEED) * 0.2
 
 				local targetVel
-				if moving then
-					targetVel = ((camera.CFrame.LookVector * (CONTROL.F + CONTROL.B)) + ((camera.CFrame * CFrame.new(CONTROL.L + CONTROL.R, (CONTROL.F + CONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0).p) - camera.CFrame.p))
-					targetVel = targetVel.Unit * SPEED
-					lCONTROL = {F = CONTROL.F, B = CONTROL.B, L = CONTROL.L, R = CONTROL.R}
-				elseif SPEED ~= 0 then
-					targetVel = ((camera.CFrame.LookVector * (lCONTROL.F + lCONTROL.B)) + ((camera.CFrame * CFrame.new(lCONTROL.L + lCONTROL.R, (lCONTROL.F + lCONTROL.B + CONTROL.Q + CONTROL.E) * 0.2, 0).p) - camera.CFrame.p))
-					targetVel = targetVel.Unit * SPEED
-				else
-					targetVel = Vector3.new(0, 0, 0)
 				local vertVel = Vector3.new(0, CONTROL.Q + CONTROL.E, 0)
 				if moving then
 					local hDir = (camera.CFrame.LookVector * (CONTROL.F + CONTROL.B)) + ((camera.CFrame * CFrame.new(CONTROL.L + CONTROL.R, 0, 0)).Position - camera.CFrame.Position)
@@ -9273,10 +9264,6 @@ addcmd('walkto',{'follow'},function(args, speaker)
 				wait(.1)
 			end
 			walkto = true
-			repeat wait()
-				task.wait(.1)
-			end
-			walkto = true
 			repeat task.wait()
 				speaker.Character:FindFirstChildOfClass('Humanoid'):MoveTo(getRoot(Players[v].Character).Position)
 			until Players[v].Character == nil or not getRoot(Players[v].Character) or walkto == false
@@ -9296,10 +9283,6 @@ addcmd('pathfindwalkto',{'pathfindfollow'},function(args, speaker)
 			if speaker.Character:FindFirstChildOfClass('Humanoid') and speaker.Character:FindFirstChildOfClass('Humanoid').SeatPart then
 				speaker.Character:FindFirstChildOfClass('Humanoid').Sit = false
 				wait(.1)
-			end
-			walkto = true
-			repeat wait()
-				task.wait(.1)
 			end
 			walkto = true
 			repeat task.wait()
@@ -9342,11 +9325,6 @@ addcmd('pathfindwalktowaypoint',{'pathfindwalktowp'},function(args, speaker)
 				end
 				local TrueCoords = Vector3.new(WayPoints[i].COORD[1], WayPoints[i].COORD[2], WayPoints[i].COORD[3])
 				waypointwalkto = true
-				repeat wait()
-					task.wait(.1)
-				end
-				local TrueCoords = Vector3.new(WayPoints[i].COORD[1], WayPoints[i].COORD[2], WayPoints[i].COORD[3])
-				waypointwalkto = true
 				repeat task.wait()
 					local success, response = pcall(function()
 						path:ComputeAsync(getRoot(speaker.Character).Position, TrueCoords)
@@ -9374,11 +9352,6 @@ addcmd('pathfindwalktowaypoint',{'pathfindwalktowp'},function(args, speaker)
 				if speaker.Character:FindFirstChildOfClass('Humanoid') and speaker.Character:FindFirstChildOfClass('Humanoid').SeatPart then
 					speaker.Character:FindFirstChildOfClass('Humanoid').Sit = false
 					wait(.1)
-				end
-				local TrueCoords = pWayPoints[i].COORD[1].Position
-				waypointwalkto = true
-				repeat wait()
-					task.wait(.1)
 				end
 				local TrueCoords = pWayPoints[i].COORD[1].Position
 				waypointwalkto = true
@@ -11148,9 +11121,6 @@ addcmd('tweengotopartclass',{'tgpc'},function(args, speaker)
 			if speaker.Character:FindFirstChildOfClass('Humanoid') and speaker.Character:FindFirstChildOfClass('Humanoid').SeatPart then
 				speaker.Character:FindFirstChildOfClass('Humanoid').Sit = false
 				wait(.1)
-			end
-			wait(gotopartDelay)
-				task.wait(.1)
 			end
 			task.wait(gotopartDelay)
 			TweenService:Create(getRoot(speaker.Character), TweenInfo.new(tweenSpeed, Enum.EasingStyle.Linear), {CFrame = v.CFrame}):Play()
