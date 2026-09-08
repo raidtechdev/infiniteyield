@@ -4683,8 +4683,8 @@ CMDs[#CMDs + 1] = {NAME = 'destroyheight / dh [num]', DESC = 'Sets FallenPartsDe
 CMDs[#CMDs + 1] = {NAME = 'fakeout', DESC = 'Tp to the void and then back (useful to kill people attached to you)'}
 CMDs[#CMDs + 1] = {NAME = 'antivoid', DESC = 'Prevents you from falling into the void by launching you upwards'}
 CMDs[#CMDs + 1] = {NAME = 'unantivoid / noantivoid', DESC = 'Disables antivoid'}
-CMDs[#CMDs + 1] = {NAME = 'nofall', DESC = 'Prevents fall damage (great for Natural Disasters)'}
-CMDs[#CMDs + 1] = {NAME = 'unnofall / nofall', DESC = 'Disables nofall'}
+CMDs[#CMDs + 1] = {NAME = 'falldmg', DESC = 'Prevents fall damage (great for Natural Disasters) — alias: nofall'}
+CMDs[#CMDs + 1] = {NAME = 'unfalldmg / nofall', DESC = 'Disables fall damage protection'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
 CMDs[#CMDs + 1] = {NAME = 'fullbright / fb (CLIENT)', DESC = 'Makes the map brighter / more visible'}
 CMDs[#CMDs + 1] = {NAME = 'loopfullbright / loopfb (CLIENT)', DESC = 'Makes the map brighter / more visible but looped'}
@@ -10560,7 +10560,7 @@ local function startNofall(speaker)
 	end)
 end
 
-addcmd('nofall',{},function(args, speaker)
+addcmd('falldmg',{'nofall'},function(args, speaker)
 	nofallActive = true
 	startNofall(speaker)
 	if nofallRespawnConn then nofallRespawnConn:Disconnect() end
@@ -10571,7 +10571,7 @@ addcmd('nofall',{},function(args, speaker)
 	notify('No Fall Damage', 'Fall damage disabled')
 end)
 
-addcmd('unnofall',{'nonofall'},function(args, speaker)
+addcmd('unfalldmg',{'unnofall','nonofall'},function(args, speaker)
 	nofallActive = false
 	if nofallStateConn then nofallStateConn:Disconnect() nofallStateConn = nil end
 	if nofallRespawnConn then nofallRespawnConn:Disconnect() nofallRespawnConn = nil end
