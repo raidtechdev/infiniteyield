@@ -4683,6 +4683,8 @@ CMDs[#CMDs + 1] = {NAME = 'destroyheight / dh [num]', DESC = 'Sets FallenPartsDe
 CMDs[#CMDs + 1] = {NAME = 'fakeout', DESC = 'Tp to the void and then back (useful to kill people attached to you)'}
 CMDs[#CMDs + 1] = {NAME = 'antivoid', DESC = 'Prevents you from falling into the void by launching you upwards'}
 CMDs[#CMDs + 1] = {NAME = 'unantivoid / noantivoid', DESC = 'Disables antivoid'}
+CMDs[#CMDs + 1] = {NAME = 'nofall', DESC = 'Prevents fall damage (great for Natural Disasters)'}
+CMDs[#CMDs + 1] = {NAME = 'unnofall / nofall', DESC = 'Disables nofall'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
 CMDs[#CMDs + 1] = {NAME = 'fullbright / fb (CLIENT)', DESC = 'Makes the map brighter / more visible'}
 CMDs[#CMDs + 1] = {NAME = 'loopfullbright / loopfb (CLIENT)', DESC = 'Makes the map brighter / more visible but looped'}
@@ -7231,7 +7233,6 @@ end
 addcmd('fly',{},function(args, speaker)
 	if not IsOnMobile then
 		NOFLY()
-		wait()
 		task.wait()
 		sFLY()
 	else
@@ -7256,7 +7257,6 @@ end)
 addcmd('vfly',{'vehiclefly'},function(args, speaker)
 	if not IsOnMobile then
 		NOFLY()
-		wait()
 		task.wait()
 		sFLY(true)
 	else
@@ -10529,6 +10529,53 @@ addcmd('unloopspeed',{'unloopws'},function(args, speaker)
 	cleanLoopBV(char and getRoot(char))
 	HumanModCons.wsLoop = (HumanModCons.wsLoop and HumanModCons.wsLoop:Disconnect() and false) or nil
 	HumanModCons.wsCA = (HumanModCons.wsCA and HumanModCons.wsCA:Disconnect() and false) or nil
+end)
+
+local nofallActive = false
+local nofallStateConn = nil
+local nofallRespawnConn = nil
+
+local function startNofall(speaker)
+	local char = speaker.Character
+	local hum = char and char:FindFirstChildOfClass('Humanoid')
+	if not hum then return end
+
+	if nofallStateConn then nofallStateConn:Disconnect() end
+
+	local healthBeforeFall = hum.MaxHealth
+	local falling = false
+
+	nofallStateConn = hum.StateChanged:Connect(function(_, new)
+		if new == Enum.HumanoidStateType.FreeFalling then
+			falling = true
+			healthBeforeFall = hum.Health
+		elseif falling then
+			falling = false
+			task.defer(function()
+				if hum and hum.Parent and hum.Health < healthBeforeFall then
+					hum.Health = healthBeforeFall
+				end
+			end)
+		end
+	end)
+end
+
+addcmd('nofall',{},function(args, speaker)
+	nofallActive = true
+	startNofall(speaker)
+	if nofallRespawnConn then nofallRespawnConn:Disconnect() end
+	nofallRespawnConn = speaker.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		if nofallActive then startNofall(speaker) end
+	end)
+	notify('No Fall Damage', 'Fall damage disabled')
+end)
+
+addcmd('unnofall',{'nonofall'},function(args, speaker)
+	nofallActive = false
+	if nofallStateConn then nofallStateConn:Disconnect() nofallStateConn = nil end
+	if nofallRespawnConn then nofallRespawnConn:Disconnect() nofallRespawnConn = nil end
+	notify('No Fall Damage', 'Fall damage enabled')
 end)
 
 addcmd('spoofjumppower',{'spoofjp'},function(args, speaker)
@@ -13947,6 +13994,8 @@ local numericArgCmds = {
 	framerate=true,
 	fps=true,
 	delay=true,
+	fly=true,
+	loopspeed=true, loopws=true,
 }
 
 local function makeRow(cmd, idx)
