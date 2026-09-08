@@ -4683,8 +4683,8 @@ CMDs[#CMDs + 1] = {NAME = 'destroyheight / dh [num]', DESC = 'Sets FallenPartsDe
 CMDs[#CMDs + 1] = {NAME = 'fakeout', DESC = 'Tp to the void and then back (useful to kill people attached to you)'}
 CMDs[#CMDs + 1] = {NAME = 'antivoid', DESC = 'Prevents you from falling into the void by launching you upwards'}
 CMDs[#CMDs + 1] = {NAME = 'unantivoid / noantivoid', DESC = 'Disables antivoid'}
-CMDs[#CMDs + 1] = {NAME = 'falldmg', DESC = 'Prevents fall damage (great for Natural Disasters) — alias: nofall'}
-CMDs[#CMDs + 1] = {NAME = 'unfalldmg / nofall', DESC = 'Disables fall damage protection'}
+CMDs[#CMDs + 1] = {NAME = 'nofall', DESC = 'Prevents fall damage (great for Natural Disasters)'}
+CMDs[#CMDs + 1] = {NAME = 'unnofall', DESC = 'Disables fall damage protection'}
 CMDs[#CMDs + 1] = {NAME = '', DESC = ''}
 CMDs[#CMDs + 1] = {NAME = 'fullbright / fb (CLIENT)', DESC = 'Makes the map brighter / more visible'}
 CMDs[#CMDs + 1] = {NAME = 'loopfullbright / loopfb (CLIENT)', DESC = 'Makes the map brighter / more visible but looped'}
@@ -10560,7 +10560,7 @@ local function startNofall(speaker)
 	end)
 end
 
-addcmd('falldmg',{'nofall'},function(args, speaker)
+addcmd('nofall',{},function(args, speaker)
 	nofallActive = true
 	startNofall(speaker)
 	if nofallRespawnConn then nofallRespawnConn:Disconnect() end
@@ -10571,7 +10571,7 @@ addcmd('falldmg',{'nofall'},function(args, speaker)
 	notify('No Fall Damage', 'Fall damage disabled')
 end)
 
-addcmd('unfalldmg',{'unnofall','nonofall'},function(args, speaker)
+addcmd('unnofall',{'nonofall'},function(args, speaker)
 	nofallActive = false
 	if nofallStateConn then nofallStateConn:Disconnect() nofallStateConn = nil end
 	if nofallRespawnConn then nofallRespawnConn:Disconnect() nofallRespawnConn = nil end
@@ -14135,13 +14135,12 @@ end
 -- build all rows after cmds table is fully populated
 local allRows = {}
 local function buildRows()
-	-- filter out un/no cmds and empty entries — those are the disable side, shown via the toggle
+	-- skip only actual disable-side commands (the ones that appear as the
+	-- toggle's Disable target), not every "un/no" prefix blindly
 	local skipSet = {}
 	for _, c in ipairs(cmds) do
-		local n = c.NAME:lower()
-		if n:sub(1,2) == "un" or n:sub(1,2) == "no" then
-			skipSet[n] = true
-		end
+		local d = findDisableCmd(c.NAME)
+		if d then skipSet[d:lower()] = true end
 	end
 
 	local idx = 0
