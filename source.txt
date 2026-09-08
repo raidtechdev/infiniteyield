@@ -3240,9 +3240,6 @@ function notify(text,text2,length)
 			pinNotification:Disconnect()
 		end)
 		if length and isNumber(length) then
-			wait(length)
-		else
-			wait(10)
 			task.wait(length)
 		else
 			task.wait(10)
