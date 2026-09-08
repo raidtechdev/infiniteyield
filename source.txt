@@ -6969,7 +6969,6 @@ addcmd("inviteprompt", {}, function(args, speaker)
 			placeId = PlaceId,
 			gameInstanceId = JobId,
 			referredByPlayerId = plrs[1].UserId
-			referredByPlayerId = plr[1].UserId
 		})
 	end
 end)
